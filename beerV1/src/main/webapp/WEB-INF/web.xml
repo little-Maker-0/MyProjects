@@ -12,6 +12,19 @@
         <servlet-name>Ch4 Redirect</servlet-name>
         <servlet-class>com.smxweb.web.TestRedirect</servlet-class>
     </servlet>
+    
+    <servlet>
+        <servlet-name>BeerParam</servlet-name>
+        <servlet-class>com.smxweb.web.TestInitParams</servlet-class>
+        <init-param>
+            <param-name>adminEmail</param-name>
+            <param-value>kergyAnderul@gmail.com</param-value>
+        </init-param>
+        <init-param>
+            <param-name>mainEmail</param-name>
+            <param-value>1145718893@qq.com</param-value>
+        </init-param>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>Ch3 Beer</servlet-name>
@@ -21,6 +34,11 @@
     <servlet-mapping>
         <servlet-name>Ch4 Redirect</servlet-name>
         <url-pattern>/Come.here</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>BeerParam</servlet-name>
+        <url-pattern>/TestInit.do</url-pattern>
     </servlet-mapping>
 
 </web-app>
