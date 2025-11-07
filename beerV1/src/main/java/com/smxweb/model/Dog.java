@@ -1,6 +1,9 @@
 package com.smxweb.model;
 
-public class Dog {
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
+
+public class Dog implements HttpSessionBindingListener {
 
     private String breed;
 
@@ -10,5 +13,15 @@ public class Dog {
 
     public String getBreed() {
         return breed;
+    }
+
+    @Override
+    public void valueBound(HttpSessionBindingEvent event) {
+
+    }
+
+    @Override
+    public void valueUnbound(HttpSessionBindingEvent event) {
+
     }
 }

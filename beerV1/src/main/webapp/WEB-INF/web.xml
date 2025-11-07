@@ -30,6 +30,36 @@
         <servlet-name>ListenerTester</servlet-name>
         <servlet-class>com.smxweb.web.ListenerTester</servlet-class>
     </servlet>
+    
+    <servlet>
+        <servlet-name>SessionAndUrl</servlet-name>
+        <servlet-class>com.smxweb.web.SessionAndUrl</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CookieTest</servlet-name>
+        <servlet-class>com.smxweb.web.CookieTest</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>CheckCookie</servlet-name>
+        <servlet-class>com.smxweb.web.CheckCookie</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CookieTest</servlet-name>
+        <url-pattern>/CookieTest.do</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CheckCookie</servlet-name>
+        <url-pattern>/CheckCookie.do</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>SessionAndUrl</servlet-name>
+        <url-pattern>/SessionTest.do</url-pattern>
+    </servlet-mapping>
 
     <servlet-mapping>
         <servlet-name>ListenerTester</servlet-name>
@@ -59,6 +89,10 @@
     <listener>
         <listener-class>com.smxweb.listener.MyservletContextListener</listener-class>
     </listener>
+
+    <session-config>
+        <session-timeout>10</session-timeout>
+    </session-config>
 
 </web-app>
 
