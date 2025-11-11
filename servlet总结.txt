@@ -1,0 +1,186 @@
+《Head First Servlets & JSP》核心内容复习（不含 JSP）
+
+第一部分：Web 应用基础
+
+1. HTTP 协议
+   · 请求/响应模型： 浏览器（客户端）发送请求，服务器返回响应。
+   · HTTP 方法：
+     · GET： 用于获取资源。参数在 URL 中可见，有长度限制。
+     · POST： 用于提交数据。参数在请求体中，不可见，无长度限制。
+     · PUT, DELETE, HEAD 等。
+   · 状态码：
+     · 200： 成功
+     · 302： 重定向（配合 Location 头使用）
+     · 404： 资源未找到
+     · 500： 服务器内部错误（通常是 Servlet 代码异常）
+2. Web 服务器 vs. Web 容器
+   · Web 服务器（如 Apache, Nginx）： 处理 HTTP 请求，返回静态资源（HTML， 图片）。
+   · Web 容器（如 Tomcat, Jetty）： 也叫做 Servlet 容器。它能运行 Servlet 和 JSP，管理它们的生命周期，并将 HTTP 请求转换为 Java 对象（HttpServletRequest），将 Java 对象转换为 HTTP 响应（HttpServletResponse）。
+
+第二部分：Servlet 核心
+
+1. 什么是 Servlet？
+   · 一个用 Java 编写的服务器端程序，用于扩展 Web 服务器的功能，动态生成 Web 内容。
+   · 它就是一个实现了 javax.servlet.Servlet 接口的 Java 类。我们通常直接继承 HttpServlet。
+2. Servlet 生命周期
+   这是重中之重，由容器完全管理。
+   · 1. 加载和实例化： 容器首次收到对该 Servlet 的请求时，会调用其无参构造函数创建一个实例。
+   · 2. 初始化 init()： 容器在实例化后立即调用 init(ServletConfig) 方法。该方法只调用一次，用于执行一次性设置（如获取初始化参数、建立数据库连接）。
+   · 3. 处理请求 service()： 对于每个请求，容器会创建一个新线程，并调用 service 方法。service 方法会根据请求类型（GET/POST）自动调用相应的 doGet() 或 doPost() 方法。
+   · 4. 销毁 destroy()： 当容器决定卸载 Servlet（如应用关闭时），会调用 destroy() 方法。该方法只调用一次，用于清理资源（如关闭数据库连接）。
+3. 核心对象
+   · HttpServletRequest： 代表客户端的请求。
+     · 获取参数： getParameter(String name), getParameterValues(String name)（用于复选框等多值）
+     · 获取属性： getAttribute(String name)
+     · 设置属性： setAttribute(String name, Object o)（用于在请求间传递数据）
+     · 获取请求分发器： getRequestDispatcher(String path)（用于转发）
+     · 获取会话： getSession()
+   · HttpServletResponse： 代表服务器对客户端的响应。
+     · 设置内容类型： setContentType("text/html")（mime类型）
+     · 获取输出流： getWriter()（用于输出字符，如 HTML），getOutputStream()（用于输出字节，如图片）。
+     · 发送重定向： sendRedirect(String location)
+   · ServletConfig： 对应单个 Servlet 的配置信息。在 init() 方法中由容器传入。
+     · 获取初始化参数： getInitParameter(String name)
+     · 获取 ServletContext： getServletContext()
+   · ServletContext： 对应整个 Web 应用。每个应用只有一个 ServletContext 对象。
+     · 获取上下文初始化参数： getInitParameter(String name)（在 web.xml 的 <context-param> 中配置）
+     · 设置/获取应用范围的属性： setAttribute(String name, Object o), getAttribute(String name)
+     · 获取服务器信息： getServerInfo()
+     · 获取资源的真实路径： getRealPath(String path)
+
+第三部分：关键技术与模式
+
+1. 请求分发
+   · 转发
+     · 方式： request.getRequestDispatcher("目标URL").forward(request, response);
+     · 特点： 在服务器内部完成，浏览器地址栏不变。共享同一个 request 对象。
+   · 重定向
+     · 方式： response.sendRedirect("目标URL");
+     · 特点： 向浏览器发送一个 302 状态码和 Location 头，由浏览器发起新请求。浏览器地址栏改变。不共享 request 对象。
+2. 会话管理
+   · 为什么需要？ HTTP 是无状态的，会话用于跟踪同一个用户在不同请求间的状态。
+   · 核心对象： HttpSession
+     · 获取： HttpSession session = request.getSession(true); // 如果不存在则创建
+     · 设置/获取属性： session.setAttribute("key", value);, session.getAttribute("key");
+     · 使会话失效： session.invalidate();（用户注销时）
+   · 会话跟踪机制：
+     · Cookie： 容器会自动创建一个名为 JSESSIONID 的 Cookie 来回传，以识别会话。
+     · URL 重写： 如果浏览器禁用 Cookie，可以使用 response.encodeURL(String url) 将会话 ID 编码到 URL 中。
+3. 监听器
+   · 用于监听 Web 应用中的特定事件。
+   · ServletContextListener： 监听应用的启动和销毁。
+     · contextInitialized(ServletContextEvent sce)： 应用启动时调用，适合做全局初始化。
+     · contextDestroyed(ServletContextEvent sce)： 应用关闭时调用，适合做清理工作。
+   · HttpSessionListener： 监听会话的创建和销毁。
+   · ServletRequestListener： 监听请求的创建和销毁。
+4. 过滤器
+   · 位于 Servlet 之前，可以对请求和响应进行预处理和后处理。
+   · 作用： 认证、日志记录、数据压缩、编码设置等。
+   · 实现： 实现 javax.servlet.Filter 接口，实现 init(), doFilter(), destroy() 方法。
+   · 在 doFilter 中： 调用 FilterChain chain.doFilter(request, response); 将请求传递给下一个过滤器或目标 Servlet。
+
+第四部分：部署与配置
+
+1. web.xml 部署描述符
+   · 虽然现在注解更常用，但理解 web.xml 至关重要。
+   · 主要配置内容：
+     · <servlet>： 声明一个 Servlet，包含 <servlet-name> 和 <servlet-class>。
+     · <servlet-mapping>： 将 Servlet 映射到一个 URL 模式，包含 <servlet-name> 和 <url-pattern>。
+     · <context-param>： 应用范围的初始化参数。
+     · <init-param>： Servlet 范围的初始化参数（在 <servlet> 标签内）。
+     · <filter> 和 <filter-mapping>： 配置过滤器。
+     · <listener>： 配置监听器。
+     · <session-config>： 配置会话超时时间（如 <session-timeout>30</session-timeout>）。
+
+---
+
+总结记忆要点
+
+· 生命周期： init() -> service() -> doGet()/doPost() -> destroy()。
+· 四大作用域（按范围从小到大）：
+  1. Page (JSP 的，此处不提)
+  2. Request： 一次请求内有效，通过 HttpServletRequest 传递。
+  3. Session： 一次用户会话内有效，通过 HttpSession 传递。
+  4. Application： 整个 Web 应用内有效，通过 ServletContext 传递。
+· 两大跳转：
+  · 转发： RequestDispatcher.forward()，服务器内部，地址栏不变，共享 request。
+  · 重定向： response.sendRedirect()，客户端二次请求，地址栏改变，不共享 request。
+· 三大组件：
+  · Servlet： 处理业务逻辑。
+  · Filter： 过滤请求和响应。
+  · Listener： 监听 Web 应用中的事件。
+
+
+            从请求到响应的应用流程
+
+阶段零：应用启动 — Listener 与 ServletContext 的初始化
+
+· 触发时机：Web 应用部署到容器（如 Tomcat）或服务器启动时。
+· 核心组件：ServletContextListener
+· 工作内容：
+  1. 容器读取 web.xml 或注解，发现配置了 ServletContextListener。
+  2. 容器在创建好 ServletContext 对象（代表整个 Web 应用）后，立即调用监听器的 contextInitialized(ServletContextEvent sce) 方法。
+  3. 在此方法中，我们进行应用级别的初始化：
+     · 初始化数据库连接池：DataSource ds = ...;
+     · 将连接池存入 ServletContext：sce.getServletContext().setAttribute("DB_POOL", ds);
+     · 加载应用程序配置、初始化日志系统等。
+· 此时的意义：为后续所有的 Servlet 和 Filter 准备好了它们所需的、需要全局共享的“基础设施”。ServletContext 在此刻成为了一个全局的、应用级别的共享数据域。
+
+阶段一：Servlet 首次加载 — ServletConfig 的登场
+
+· 触发时机：第一个请求到达某个 Servlet 时（或通过 <load-on-startup> 配置在应用启动时）。
+· 核心组件：Servlet 及其 init(ServletConfig config) 方法。
+· 工作内容：
+  1. 容器创建 Servlet 实例。
+  2. 容器调用其 init(ServletConfig config) 方法，并传入一个 ServletConfig 对象。
+  3. ServletConfig 的作用：
+     · 获取当前 Servlet 的初始化参数：在 web.xml 的 <servlet><init-param> 中配置，通过 config.getInitParameter("paramName") 获取。
+     · 获取 ServletContext：config.getServletContext()。这样，这个 Servlet 就可以访问到在阶段零初始化好的全局资源了（例如 DataSource ds = (DataSource) getServletContext().getAttribute("DB_POOL");）。
+
+阶段二：请求处理周期 — 认证与授权的细化
+
+现在我们聚焦于流程图中的 “过滤器链执行” 环节，这是安全认证与授权的核心。
+
+1. 认证 - Authentication (你是谁?)
+
+· 执行者：认证过滤器 (Authentication Filter)，通常是过滤器链的第一个或前几个。
+· 目标：验证用户的身份。
+· 具体逻辑：
+  · 检查 Session：从 HttpServletRequest 中获取 HttpSession，检查是否存在标记用户已登录的属性（如 session.getAttribute("CURRENT_USER")）。
+  · 检查 Token：对于 API 或无状态应用，检查 HTTP 请求头中的 Authorization 字段（如 JWT Token），并验证其有效性。
+  · 检查基础认证：解析 Authorization: Basic 头。
+· 结果：
+  · 认证成功：获取到用户身份信息（如 User 对象），通常将其存入请求属性（request.setAttribute("CURRENT_USER_PRINCIPAL", user)），以便后续 Filter 和 Servlet 使用。然后调用 chain.doFilter(request, response) 放行。
+  · 认证失败：不调用 chain.doFilter(...)。直接通过 response.sendRedirect("/login") 或 response.setStatus(401) 中断流程，返回认证挑战。
+
+2. 授权 - Authorization (你能做什么?)
+
+· 执行者：授权过滤器 (Authorization Filter)，紧跟在认证过滤器之后。
+· 前提：认证必须已成功，即请求中已包含用户身份信息。
+· 目标：判断已认证的用户是否有权限访问当前请求的资源。
+· 具体逻辑：
+  · 从请求属性中获取上一步认证通过的 User 对象。
+  · 检查该用户的角色或权限列表。
+  · 比对当前请求的 URL 和 HTTP 方法所需的权限。
+· 结果：
+  · 授权成功：用户拥有所需权限，调用 chain.doFilter(request, response)，请求最终到达目标 Servlet。
+  · 授权失败：用户权限不足，不调用 chain.doFilter(...)。直接通过 response.sendError(403, "Forbidden") 中断流程。
+
+阶段三与四：响应返回与应用关闭
+
+· 响应返回：Servlet 处理完后，响应会反向再次经过过滤器链，过滤器可以在 chain.doFilter() 之后的代码里进行后处理（如记录日志、压缩响应）。
+· 应用关闭：容器在卸载应用前，会调用 ServletContextListener 的 contextDestroyed 方法，用于优雅地关闭在 contextInitialized 中初始化的资源（如关闭数据库连接池）。
+
+---
+
+总结与类比
+
+组件 作用域 生命周期 在安全流程中的角色
+Listener 应用级 与应用启动/关闭同步 安全体系的奠基者：初始化安全配置、加载用户/权限数据源。
+ServletContext 应用级 与应用相同 安全资源的仓库：存放全局安全配置、共享的用户服务等。
+ServletConfig Servlet级 与Servlet相同 Servlet的安全手册：提供当前Servlet特定的配置（如所需角色）。
+Filter 请求级 与每个请求相关 安全流程的执行者：认证Filter查身份证，授权Filter查通行证。
+Servlet 请求级 与每个请求相关 被保护的核心：它专注于业务，假定能到达它的请求都是安全合法的。
+
+
+属性与参数的区别：参数通常是静态的数据，不会修改，属性相反。参数从http请求中或容器的初始化获得，属性是在各个组件内部设置的，用于传播。参数的键和值都是string类型，属性的键是string，值是object。
