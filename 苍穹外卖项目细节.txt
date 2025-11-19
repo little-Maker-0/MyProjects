@@ -22,3 +22,19 @@ JWT认证机制：用户发起请求发送用户名和密码，后端进行校�
 
 VO是视图对象，用于前端数据的展示，所以一般是controller层把VO传给前端，然后前端展示。
 DTO是传输对象，用于接受前端传来的请求参数。
+
+用户下单开发流程：在user包下创建OrderController
+在类前加上restcontroller注解，以便被容器扫描并注册为bean，加上requestmapping注解标注该层公共路径，加上api接口便于swagger调试，加上slf4j开启日志。类中定义OrderService变量，并用autowired注解自动注入对象。现在定义submit下单方法，方法前加上postmapping注解，属性里写入具体请求路径，顺便加上apioperation注解。下单逻辑交给service的submit方法处理，如果成功就返回result对象。首先检查用户的地址、购物车数据，如果为空就抛出异常，否则调用ordermapper插入一条订单数据，在xml中写入sql语句，并设置订单状态为1待付款，之后调用orderdetailmapper插入n条订单明细数据，在xml中配置好多条插入语句，然后删除购物车数据，最后包装vo对象返回给前端。注意这里涉及多表操作，要在sumit方法前加上transactional注解。
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.OrderDetailMapper">
+    <insert id="insertBatch">
+        insert into order_detail(name,image,order_id,dish_id,setmeal_id,
+                                 dish_flavor,number,amount)
+        values
+        <foreach collection="orderDetailList" item="od" separator=",">
+            (#{od.name},#{od.image},#{od.orderId},#{od.dishId},
+             #{od.setmealId},#{od.dishFlavor},#{od.number},#{od.amount})
+        </foreach>
+    </insert>
+</mapper>
